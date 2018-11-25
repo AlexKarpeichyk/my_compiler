@@ -1,3 +1,12 @@
+module Lexer 
+( isNum
+, toInt
+, fin
+, clean
+, lex_
+, tokenize 
+) where
+
 -- Necessary Imports
 
 import Data.List.Split
