@@ -1,3 +1,3 @@
 import Lexer
 
-lex_again s = lex_ s
+lex_again s = lexx s

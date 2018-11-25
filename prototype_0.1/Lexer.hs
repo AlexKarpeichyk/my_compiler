@@ -3,7 +3,7 @@ module Lexer
 , toInt
 , fin
 , clean
-, lex_
+, lexx
 , tokenize 
 ) where
 
@@ -74,8 +74,8 @@ clean (h:t)
   | h == "" || h == " " = clean t
   | otherwise = h:(clean t)
 
-lex_ :: String -> [Token]
-lex_ s = tokenize (fin (clean (split (oneOf " (){}=+-/*><;,:") s))) []
+lexx :: String -> [Token]
+lexx s = tokenize (fin (clean (split (oneOf " (){}=+-/*><;,:") s))) []
 
 tokenize :: [String] -> [Token] -> [Token]
 tokenize [] l = l
