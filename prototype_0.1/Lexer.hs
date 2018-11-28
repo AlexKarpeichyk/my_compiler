@@ -1,10 +1,11 @@
-module Lexer 
-( isNum
+module Lexer
+( Token (..)
+, isNum
 , toInt
 , fin
-, clean
+, clearSpaces
 , lexx
-, tokenize 
+, tokenize
 ) where
 
 -- Necessary Imports
@@ -44,9 +45,12 @@ data Token = Semicolon
   | Repeat
   | Until
   | Break 
-  | Continue deriving (Show)
+  | Continue deriving (Show, Eq)
 
 -- Functions 
+
+isID :: [Char] -> Bool
+isID s = isLower (head s)
 
 isNum :: [Char] -> Bool
 isNum [] = error "no argument found"
@@ -66,16 +70,13 @@ fin (h:f:t)
   | h == ">" && f == "=" = ">=":fin t
   | h == "=" && f == "=" = "==":fin t
   | h == ":" && f == "=" = ":=":fin t
-  | otherwise = h:f:(fin t)  
+  | otherwise = h:(fin (f:t))
 
-clean :: [String] -> [String]
-clean [] = []
-clean (h:t) 
-  | h == "" || h == " " = clean t
-  | otherwise = h:(clean t)
+clearSpaces :: [String] -> [String]
+clearSpaces l = filter (\x -> x /= "" && x /= " ") l
 
 lexx :: String -> [Token]
-lexx s = tokenize (fin (clean (split (oneOf " (){}=+-/*><;,:") s))) []
+lexx s = tokenize (fin (clearSpaces (split (oneOf " (){}=+-/*><;,:") s))) []
 
 tokenize :: [String] -> [Token] -> [Token]
 tokenize [] l = l
@@ -110,6 +111,7 @@ tokenize (h:t) l
   | h == "continue" = tokenize (t) (l ++ [Continue])
   | h == "true" = tokenize (t) (l ++ [(BOOL "true")])
   | h == "false" = tokenize (t) (l ++ [(BOOL "false")])
-  | (isNum h) = tokenize (t) (l ++ [(INT (toInt h))])
-  | otherwise = tokenize (t) (l ++ [(ID h)])
+  | (isNum h) = tokenize (t) (l ++ [INT (toInt h)])
+  | (isID h) = tokenize (t) (l ++ [ID h])
+  | otherwise = error ("token not in language: " ++ "\"" ++ h ++ "\"")
 
