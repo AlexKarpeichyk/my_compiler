@@ -19,8 +19,12 @@ data E =
   | BREAK
   | CONTINUE deriving (Show, Eq)
 data COMP = Eq (E) (E) | Less (E) (E) | Greater (E) (E) | LessEq (E) (E) | GreaterEq (E) (E) deriving (Show, Eq)
-data BINOP = Add (E) (E) | Sub (E) (E) | Mult (E) (E) | Div (E) (E) deriving (Show, Eq)
+data BINOP = Add (E) (E) | Sub (E) (E) | Times (E) (E) | Divide (E) (E) deriving (Show, Eq)
 
-parseBinop :: [Token] -> BINOP
-parseBinop (l:m:r:t)
-  | m == Plus =  
+parseBinop :: [Token] -> Binop
+parseBinop (h:f:t)
+  | f == Lexer.Plus = Add h (parseBinop t)
+  | f == Lexer.Minus = Sub h (parseBinop t)
+  | f == Lexer.Mult = Times h (parseBinop t)
+  | f == Lexer.Div = Divide h (parseBinop t)
+  | otherwise = error "syntax error"
