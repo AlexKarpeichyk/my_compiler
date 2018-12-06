@@ -34,7 +34,7 @@ isID :: [Char] -> Bool
 isID s = isLower (head s)
 
 isNum :: [Char] -> Bool
-isNum [] = error "no argument found"
+isNum [] = True
 isNum [x] = isDigit x
 isNum (h:t)
   | isDigit h = isNum t
