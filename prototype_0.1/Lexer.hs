@@ -1,10 +1,12 @@
 module Lexer
 ( Token (..)
+, tokenDict
 , isNum
 , toInt
 , fin
 , clearSpaces
 , lexx
+, findToken
 , tokenize
 ) where
 
