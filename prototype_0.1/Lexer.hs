@@ -25,7 +25,7 @@ data Token =
   | If | Then | Else | While | Do | Repeat | Until 
   | Break | Continue deriving (Show, Eq)
 
-tokenDict :: [(Token, String)]
+--tokenDict :: [(Token, String)]
 --tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")"), (LCurlyBracket, "{"), (RCurlyBracket, "}"), (EqualDefines, "="), (Equal, "=")]
 
 -- Functions 
