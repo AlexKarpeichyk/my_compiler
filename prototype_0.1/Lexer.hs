@@ -1,12 +1,12 @@
 module Lexer
 ( Token (..)
-, tokenDict
+--, tokenDict
 , isNum
 , toInt
 , fin
 , clearSpaces
 , lexx
-, findToken
+--, findToken
 , tokenize
 ) where
 
@@ -26,7 +26,7 @@ data Token =
   | Break | Continue deriving (Show, Eq)
 
 tokenDict :: [(Token, String)]
-tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")")]
+--tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")"), (LCurlyBracket, "{"), (RCurlyBracket, "}"), (EqualDefines, "="), (Equal, "=")]
 
 -- Functions 
 
@@ -59,16 +59,16 @@ clearSpaces l = filter (\x -> x /= "" && x /= " ") l
 lexx :: String -> [Token]
 lexx s = tokenize (fin (clearSpaces (split (oneOf " (){}=+-/*><;,:") s))) []
 
-findToken :: String -> [(Token, String)] -> Token
---findToken tok [] = error "lol" 
+{-
+findToken :: String -> [(Token, String)] -> Token 
 findToken tok (h:t)
   | tok == snd h = fst h
   | otherwise = findToken tok t 
+-}
 
 tokenize :: [String] -> [Token] -> [Token]
 tokenize [] l = l
-tokenize (h:t) l = tokenize t (l ++ [findToken h tokenDict])  
-{-
+--tokenize (h:t) l = tokenize t (l ++ [findToken h tokenDict])  
 tokenize (h:t) l
   | h == ";" = tokenize (t) (l ++ [Semicolon])
   | h == "(" = tokenize (t) (l ++ [LBracket])
@@ -103,4 +103,3 @@ tokenize (h:t) l
   | (isNum h) = tokenize (t) (l ++ [INT (toInt h)])
   | (isID h) = tokenize (t) (l ++ [ID h])
   | otherwise = error ("token not in language: " ++ "\"" ++ h ++ "\"")
--}
