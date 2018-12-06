@@ -15,37 +15,16 @@ import Data.Char
 
 -- Datatypes
 
-data Token = Semicolon
-  | LBracket
-  | RBracket
-  | LCurlyBracket
-  | RCurlyBracket
-  | EqualDefines
-  | Equal
-  | LessThan 
-  | GreaterThan
-  | LessEq
-  | GreaterEq
-  | Comma
-  | Assign
-  | Plus
-  | Minus
-  | Mult
-  | Div
-  | ID String
-  | INT Integer
-  | BOOL String
-  | Def
-  | Skip
-  | If
-  | Then
-  | Else
-  | While
-  | Do
-  | Repeat
-  | Until
-  | Break 
-  | Continue deriving (Show, Eq)
+data Token = 
+    Semicolon | LBracket | RBracket | LCurlyBracket | RCurlyBracket
+  | EqualDefines | Equal | LessThan | GreaterThan | LessEq
+  | GreaterEq | Comma | Assign | Plus | Minus | Mult | Div
+  | ID String | INT Integer | BOOL String | Def | Skip
+  | If | Then | Else | While | Do | Repeat | Until 
+  | Break | Continue deriving (Show, Eq)
+
+tokenDict :: [(Token, String)]
+tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")")]
 
 -- Functions 
 
@@ -78,8 +57,16 @@ clearSpaces l = filter (\x -> x /= "" && x /= " ") l
 lexx :: String -> [Token]
 lexx s = tokenize (fin (clearSpaces (split (oneOf " (){}=+-/*><;,:") s))) []
 
+findToken :: String -> [(Token, String)] -> Token
+--findToken tok [] = error "lol" 
+findToken tok (h:t)
+  | tok == snd h = fst h
+  | otherwise = findToken tok t 
+
 tokenize :: [String] -> [Token] -> [Token]
 tokenize [] l = l
+tokenize (h:t) l = tokenize t (l ++ [findToken h tokenDict])  
+{-
 tokenize (h:t) l
   | h == ";" = tokenize (t) (l ++ [Semicolon])
   | h == "(" = tokenize (t) (l ++ [LBracket])
@@ -114,4 +101,4 @@ tokenize (h:t) l
   | (isNum h) = tokenize (t) (l ++ [INT (toInt h)])
   | (isID h) = tokenize (t) (l ++ [ID h])
   | otherwise = error ("token not in language: " ++ "\"" ++ h ++ "\"")
-
+-}
