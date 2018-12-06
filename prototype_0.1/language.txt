@@ -6,9 +6,12 @@ VARDEC →  ε | VARDECNE
 VARDECNE → ID | VARDECNE, ID 
 ID → ... (identifiers)
 INT → ... (Integers)
+BOOL → true | false
+STRING → ... (Strings)
 BLOCK → { ENE }
 ENE → E | E; ENE
-E →  INT 
+E →  INT
+  | BOOL 
   | ID 
   | if E COMP E then BLOCK else BLOCK
   | (E BINOP E)
@@ -39,4 +42,4 @@ All non-empty arrays of characters containing digits 0-9.
 
 5. Identifiers 
 
--- Everything else -- 
+[a-b]+([A-B]*|[0-9]*|_*) 
