@@ -3,7 +3,7 @@ module Lexer
 --, tokenDict
 , isNum
 , toInt
-, fin
+, specNot
 , clearSpaces
 , lexx
 --, findToken
@@ -14,6 +14,7 @@ module Lexer
 
 import Data.List.Split
 import Data.Char
+import Text.Regex.Posix
 
 -- Datatypes
 
@@ -21,17 +22,31 @@ data Token =
     Semicolon | LBracket | RBracket | LCurlyBracket | RCurlyBracket
   | EqualDefines | Equal | LessThan | GreaterThan | LessEq
   | GreaterEq | Comma | Assign | Plus | Minus | Mult | Div
-  | ID String | INT Integer | BOOL String | Def | Skip
+  | ID String | INT Integer | BOOL String | STRING String | Def | Skip
   | If | Then | Else | While | Do | Repeat | Until 
   | Break | Continue deriving (Show, Eq)
 
 --tokenDict :: [(Token, String)]
---tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")"), (LCurlyBracket, "{"), (RCurlyBracket, "}"), (EqualDefines, "="), (Equal, "=")]
+--tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")")]
 
 -- Functions 
 
 isID :: [Char] -> Bool
-isID s = isLower (head s)
+isID [] = False
+isID [x]
+  | isLower x = True
+  | otherwise = False
+isID (h:t)
+  | isLower h && inRegex t = True
+  | otherwise = False
+
+inRegex :: String -> Bool
+inRegex s = (s =~ "[a-z]*[A-Z]*[0-9]*_*" :: Bool)
+
+isString :: String -> Bool
+isString s
+  | head s == '"' && last s == '"' = True
+  | otherwise = False
 
 isNum :: [Char] -> Bool
 isNum [] = True
@@ -43,21 +58,33 @@ isNum (h:t)
 toInt :: String -> Integer
 toInt s = read s :: Integer
 
-fin :: [String] -> [String]
-fin [] = []
-fin [x] = [x]
-fin (h:f:t)
-  | h == "<" && f == "=" = "<=":fin t
-  | h == ">" && f == "=" = ">=":fin t
-  | h == "=" && f == "=" = "==":fin t
-  | h == ":" && f == "=" = ":=":fin t
-  | otherwise = h:(fin (f:t))
+specNot :: [String] -> [String]
+specNot [] = []
+specNot [x] = [x]
+specNot (h:f:t)
+  | h == "<" && f == "=" = "<=":specNot t
+  | h == ">" && f == "=" = ">=":specNot t
+  | h == "=" && f == "=" = "==":specNot t
+  | h == ":" && f == "=" = ":=":specNot t
+  | otherwise = h:(specNot (f:t))
 
+{-
+fixStrings :: [String] -> [String]
+fixStrings [] = []
+fixStrings [x] = [x]
+fixStrings (h:t)
+  | head h == '"' && last h == '"' = h:(fixStrings t)
+  | otherwise = fixStrings ((combineStrings h (head t)):(tail t))
+-}
+
+combineStrings :: String -> String -> String
+combineStrings l r = l ++ " " ++ r
+ 
 clearSpaces :: [String] -> [String]
 clearSpaces l = filter (\x -> x /= "" && x /= " ") l
 
 lexx :: String -> [Token]
-lexx s = tokenize (fin (clearSpaces (split (oneOf " (){}=+-/*><;,:") s))) []
+lexx s = tokenize (specNot (clearSpaces (split (oneOf " \t\n(){}=+-/*><;,:") s))) []
 
 {-
 findToken :: String -> [(Token, String)] -> Token 
@@ -101,5 +128,6 @@ tokenize (h:t) l
   | h == "true" = tokenize (t) (l ++ [(BOOL "true")])
   | h == "false" = tokenize (t) (l ++ [(BOOL "false")])
   | (isNum h) = tokenize (t) (l ++ [INT (toInt h)])
+  | (isString h) = tokenize (t) (l ++ [STRING h])
   | (isID h) = tokenize (t) (l ++ [ID h])
   | otherwise = error ("token not in language: " ++ "\"" ++ h ++ "\"")

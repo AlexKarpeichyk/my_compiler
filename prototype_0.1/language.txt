@@ -42,4 +42,8 @@ All non-empty arrays of characters containing digits 0-9.
 
 5. Identifiers 
 
-[a-b]+([A-B]*|[0-9]*|_*) 
+[a-b]+[A-Z0-9]*_*
+
+6. Spaces 
+
+Spaces (" "), Tabs (\t), Newlines (\n)
