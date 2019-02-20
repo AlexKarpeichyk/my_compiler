@@ -1,12 +1,10 @@
 module Lexer
 ( Token (..)
---, tokenDict
 , isNum
 , toInt
 , specNot
 , clearSpaces
 , lexx
---, findToken
 , tokenize
 ) where
 
@@ -25,9 +23,6 @@ data Token =
   | ID String | INT Integer | BOOL String | STRING String | Def | Skip
   | If | Then | Else | While | Do | Repeat | Until 
   | Break | Continue deriving (Show, Eq)
-
---tokenDict :: [(Token, String)]
---tokenDict = [(Semicolon, ";"), (LBracket, "("), (RBracket, ")")]
 
 -- Functions 
 
@@ -48,6 +43,13 @@ isString s
   | head s == '"' && last s == '"' = True
   | otherwise = False
 
+fixStrings :: [String] -> [String]
+fixStrings [] = []
+fixStrings [x] = [x]
+fixStrings (h:f:t)
+  | head h == '"' && last h /=  '"' = fixStrings ((h ++ " " ++ f):t)
+  | otherwise = h:(fixStrings (f:t)) 
+
 isNum :: [Char] -> Bool
 isNum [] = True
 isNum [x] = isDigit x
@@ -67,35 +69,15 @@ specNot (h:f:t)
   | h == "=" && f == "=" = "==":specNot t
   | h == ":" && f == "=" = ":=":specNot t
   | otherwise = h:(specNot (f:t))
-
-{-
-fixStrings :: [String] -> [String]
-fixStrings [] = []
-fixStrings [x] = [x]
-fixStrings (h:t)
-  | head h == '"' && last h == '"' = h:(fixStrings t)
-  | otherwise = fixStrings ((combineStrings h (head t)):(tail t))
--}
-
-combineStrings :: String -> String -> String
-combineStrings l r = l ++ " " ++ r
  
 clearSpaces :: [String] -> [String]
 clearSpaces l = filter (\x -> x /= "" && x /= " ") l
 
 lexx :: String -> [Token]
-lexx s = tokenize (specNot (clearSpaces (split (oneOf " \t\n(){}=+-/*><;,:") s))) []
-
-{-
-findToken :: String -> [(Token, String)] -> Token 
-findToken tok (h:t)
-  | tok == snd h = fst h
-  | otherwise = findToken tok t 
--}
+lexx s = tokenize (specNot (fixStrings (clearSpaces (split (oneOf " \t\n(){}=+-/*><;,:") s)))) []
 
 tokenize :: [String] -> [Token] -> [Token]
 tokenize [] l = l
---tokenize (h:t) l = tokenize t (l ++ [findToken h tokenDict])  
 tokenize (h:t) l
   | h == ";" = tokenize (t) (l ++ [Semicolon])
   | h == "(" = tokenize (t) (l ++ [LBracket])

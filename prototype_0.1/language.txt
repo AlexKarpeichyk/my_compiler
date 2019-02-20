@@ -36,14 +36,18 @@ BINOP → + | - | * | /
 
 All non-empty arrays of characters containing digits 0-9.
 
-4. Special notations
+4. Strings 
+
+Arrays of characters contained in quotation marks ("").
+
+5. Special notations
 
 [; ( ) = == < > <= >= , { } := + * - /]
 
-5. Identifiers 
+6. Identifiers 
 
 [a-b]+[A-Z0-9]*_*
 
-6. Spaces 
+7. Spaces 
 
 Spaces (" "), Tabs (\t), Newlines (\n)
