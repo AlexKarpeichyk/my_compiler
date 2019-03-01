@@ -4,6 +4,8 @@ import Lexer
 
 -- Datatypes
 
+data PreBlock = Flat Token | Bl [PreBlock] deriving (Show) 
+
 data BLOCK = Block (ENE) deriving (Show, Eq)
 data ENE = Single (E) | Seq (E) (ENE) deriving (Show, Eq)
 data E = INT_P Integer | Nest (BLOCK) | SKIP deriving (Show, Eq)
