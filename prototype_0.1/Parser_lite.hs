@@ -4,11 +4,27 @@ import Lexer
 
 -- Datatypes
 
-data PreBlock = Flat Token | Bl [PreBlock] deriving (Show) 
+data PreBlock = T (Token) | Bl [PreBlock] deriving (Show)
 
 data BLOCK = Block (ENE) deriving (Show, Eq)
 data ENE = Single (E) | Seq (E) (ENE) deriving (Show, Eq)
 data E = INT_P Integer | Nest (BLOCK) | SKIP deriving (Show, Eq)
+
+-- Functions 
+
+checkBrackets :: [Token] -> [Token] -> Bool
+checkBrackets expec [] = null expec
+checkBrackets expec (h:t)
+  | not (elem h [LCurlyBracket 0, RCurlyBracket 0]) = checkBrackets expec t
+  | h == LCurlyBracket 0 = checkBrackets (RCurlyBracket 0:expec) t
+  | h == RCurlyBracket 0 && length expec /= 0 = (h == head expec) && checkBrackets (tail expec) t
+  | otherwise = False
+
+labelBrackets expec acc [] = []
+labelBrackets expec acc (h:t)
+  | h == LCurlyBracket 0 = (LCurlyBracket (acc)):(labelBrackets (acc:expec) (acc + 1) t)
+  | h == RCurlyBracket 0 = (RCurlyBracket (head expec)):(labelBrackets (tail expec) acc t)
+  | otherwise = h:(labelBrackets expec acc t)   
 
 isInt (INT x) = True
 isInt _ = False
@@ -24,8 +40,8 @@ seqRight (h:t)
 parse :: [Token] -> [Token] -> BLOCK
 parse expec (h:t)
 --  | not (elem h [LCurlyBracket, RCurlyBracket]) = parseENE expec (h:t)
-  | h == LCurlyBracket = Block (parseENE (RCurlyBracket:expec) t)
-  | h == RCurlyBracket && length expec /= 0 = parse (tail expec) t
+  | h == LCurlyBracket 0 = Block (parseENE (RCurlyBracket 0:expec) t)
+  | h == RCurlyBracket 0 && length expec /= 0 = parse (tail expec) t
   | otherwise = error "Parse error: not a block."
 
 parseENE :: [Token] -> [Token] -> ENE

@@ -17,7 +17,7 @@ import Text.Regex.Posix
 -- Datatypes
 
 data Token = 
-    Semicolon | LBracket | RBracket | LCurlyBracket | RCurlyBracket
+    Semicolon | LBracket | RBracket | LCurlyBracket Integer | RCurlyBracket Integer
   | EqualDefines | Equal | LessThan | GreaterThan | LessEq
   | GreaterEq | Comma | Assign | Plus | Minus | Mult | Div
   | ID String | INT Integer | BOOL String | STRING String | Def | Skip
@@ -82,8 +82,8 @@ tokenize (h:t) l
   | h == ";" = tokenize (t) (l ++ [Semicolon])
   | h == "(" = tokenize (t) (l ++ [LBracket])
   | h == ")" = tokenize (t) (l ++ [RBracket])
-  | h == "{" = tokenize (t) (l ++ [LCurlyBracket])
-  | h == "}" = tokenize (t) (l ++ [RCurlyBracket])
+  | h == "{" = tokenize (t) (l ++ [LCurlyBracket 0])
+  | h == "}" = tokenize (t) (l ++ [RCurlyBracket 0])
   | h == "=" = tokenize (t) (l ++ [EqualDefines])
   | h == "==" = tokenize (t) (l ++ [Equal])
   | h == "<" = tokenize (t) (l ++ [LessThan])
@@ -112,4 +112,4 @@ tokenize (h:t) l
   | (isNum h) = tokenize (t) (l ++ [INT (toInt h)])
   | (isString h) = tokenize (t) (l ++ [STRING h])
   | (isID h) = tokenize (t) (l ++ [ID h])
-  | otherwise = error ("token not in language: " ++ "\"" ++ h ++ "\"")
+  | otherwise = error ("Not in language: " ++ "\"" ++ h ++ "\"")
