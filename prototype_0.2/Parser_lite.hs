@@ -4,11 +4,9 @@ import Lexer
 
 -- Datatypes
 
-data PreBlock = T (Token) | Bl [PreBlock] deriving (Show)
-
 data BLOCK = Block (ENE) deriving (Show, Eq)
 data ENE = Single (E) | Seq (E) (ENE) deriving (Show, Eq)
-data E = INT_P Integer | Nest (BLOCK) | SKIP deriving (Show, Eq)
+data E = INT_P Integer | Nested (BLOCK) | SKIP deriving (Show, Eq)
 
 -- Functions 
 
@@ -43,13 +41,13 @@ labelBrackets expec acc (h:t)
 
 preProc [] = []
 preProc (h:t)
-  | not (fst (isLBracket h)) = (T h):(preProc t)
+  | not (fst (isLBracket h)) = h:(preProc t)
   | fst (isLBracket h) = Bl (preProc (getBlock (snd (isLBracket h)) [] t)):(preProc (getRest (snd (isLBracket h)) t))
-  | otherwise = error "shit happens"
+  | otherwise = error "Tokens preprocessing error: unknown error."
 
 preParse l
   | checkBrackets [] l = preProc (labelBrackets [] 1 l)
-  | otherwise = error "Missmatched brackets in BLOCK formation."
+  | otherwise = error "Tokens preprocessing error: missmatched brackets in BLOCK formation."
 
 isInt (INT x) = True
 isInt _ = False
@@ -62,25 +60,25 @@ seqRight (h:t)
   | h /= Semicolon = seqRight t
   | otherwise = t
 
+parse [x] = parseBlock x
 
-parse :: [Token] -> [Token] -> BLOCK
-parse (h:t)
-  | 
+parseBlock :: Token -> BLOCK
+parseBlock (Bl x) = Block (parseENE x)
 
+parseENE :: [Token] -> ENE
+parseENE x
+  | elem Semicolon x = parseSeq x
+  | length x == 1 = Single (parseE x)
+  | otherwise = error "Parse error: expression sequence incomplete (missing ';')"
 
-parseENE :: [Token] -> [Token] -> ENE
-parseENE expec (h:t)
-  | elem Semicolon (h:t) = parseSeq expec (h:t)
-  | otherwise = Single (parseE expec (h:t))
+parseSeq :: [Token] -> ENE
+parseSeq (h:t) = Seq (parseE (seqLeft [] (h:t))) (parseENE (seqRight (h:t)))
 
-parseSeq :: [Token] -> [Token] -> ENE
-parseSeq expec (h:t) = Seq (parseE expec (seqLeft [] (h:t))) (parseENE expec (seqRight (h:t)))
-
-parseE :: [Token] -> [Token] -> E
-parseE expec (h:t)
+parseE :: [Token] -> E
+parseE (h:t)
   | isInt h = parseInt h 
   | h == Skip = SKIP
-  | otherwise = Nest (parse expec (h:t))
+  | otherwise = Nested (parseBlock h)
 
 parseInt :: Token -> E
 parseInt (INT x) = INT_P x
