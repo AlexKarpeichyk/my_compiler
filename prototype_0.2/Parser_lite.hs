@@ -6,7 +6,7 @@ import Lexer
 
 data BLOCK = Block (ENE) deriving (Show, Eq)
 data ENE = Single (E) | Seq (E) (ENE) deriving (Show, Eq)
-data E = INT_P Integer | Nested (BLOCK) | SKIP deriving (Show, Eq)
+data E = INT Integer | Nested (BLOCK) | SKIP deriving (Show, Eq)
 
 -- Functions 
 
@@ -60,25 +60,42 @@ seqRight (h:t)
   | h /= Semicolon = seqRight t
   | otherwise = t
 
-parse [x] = parseBlock x
+parse (h:t) = parseBlock (last (preParse (h:t)))
 
 parseBlock :: Token -> BLOCK
 parseBlock (Bl x) = Block (parseENE x)
 
+{-
 parseENE :: [Token] -> ENE
 parseENE x
   | elem Semicolon x = parseSeq x
   | length x == 1 = Single (parseE x)
-  | otherwise = error "Parse error: expression sequence incomplete (missing ';')"
+  | otherwise = error "Parse error: expression sequence incomplete (missing ';')."
+-}
+
+parseENE :: [Token] -> ENE
+parseENE [x] = Single (parseE [x])
+parseENE (h:t)
+  | elem Semicolon (h:t) = parseSeq (h:t)
+  | otherwise = error "Parse error: expression sequence incomplete (missing ';')."
 
 parseSeq :: [Token] -> ENE
 parseSeq (h:t) = Seq (parseE (seqLeft [] (h:t))) (parseENE (seqRight (h:t)))
 
 parseE :: [Token] -> E
+parseE [INTEGER x] = INT x
+parseE [Skip] = SKIP
+parseE [Bl x] = Nested (parseBlock (Bl x))
+parseE [x] = error "Parse error: token not yet supported."
+
+{-
+parseE :: Token -> E
 parseE (h:t)
   | isInt h = parseInt h 
   | h == Skip = SKIP
-  | otherwise = Nested (parseBlock h)
+  | isBlock h = Nested (parseBlock h)
+  | otherwise = "Parse error: token not yet supported."
 
 parseInt :: Token -> E
 parseInt (INT x) = INT_P x
+-}

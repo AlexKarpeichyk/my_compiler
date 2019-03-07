@@ -4,7 +4,7 @@ module Lexer
 , toInt
 , specNot
 , clearSpaces
-, lexx
+, lex_
 , tokenize
 ) where
 
@@ -20,7 +20,7 @@ data Token =
     Semicolon | LBracket | RBracket | LCurlyBracket Integer | RCurlyBracket Integer
   | EqualDefines | Equal | LessThan | GreaterThan | LessEq
   | GreaterEq | Comma | Assign | Plus | Minus | Mult | Div
-  | ID String | INT Integer | BOOL String | STRING String | Def | Skip
+  | IDENTIFIER String | INTEGER Integer | BOOLEAN String | STRING String | Def | Skip
   | If | Then | Else | While | Do | Repeat | Until 
   | Break | Continue | Bl [Token] deriving (Show, Eq)
 
@@ -73,8 +73,8 @@ specNot (h:f:t)
 clearSpaces :: [String] -> [String]
 clearSpaces l = filter (\x -> x /= "" && x /= " ") l
 
-lexx :: String -> [Token]
-lexx s = tokenize (specNot (fixStrings (clearSpaces (split (oneOf " \t\n(){}=+-/*><;,:") s)))) []
+lex_ :: String -> [Token]
+lex_ s = tokenize (specNot (fixStrings (clearSpaces (split (oneOf " \t\n(){}=+-/*><;,:") s)))) []
 
 tokenize :: [String] -> [Token] -> [Token]
 tokenize [] l = l
@@ -107,9 +107,9 @@ tokenize (h:t) l
   | h == "until" = tokenize (t) (l ++ [Until])
   | h == "break" = tokenize (t) (l ++ [Break])
   | h == "continue" = tokenize (t) (l ++ [Continue])
-  | h == "true" = tokenize (t) (l ++ [(BOOL "true")])
-  | h == "false" = tokenize (t) (l ++ [(BOOL "false")])
-  | (isNum h) = tokenize (t) (l ++ [INT (toInt h)])
+  | h == "true" = tokenize (t) (l ++ [(BOOLEAN "true")])
+  | h == "false" = tokenize (t) (l ++ [(BOOLEAN "false")])
+  | (isNum h) = tokenize (t) (l ++ [INTEGER (toInt h)])
   | (isString h) = tokenize (t) (l ++ [STRING h])
-  | (isID h) = tokenize (t) (l ++ [ID h])
+  | (isID h) = tokenize (t) (l ++ [IDENTIFIER h])
   | otherwise = error ("Not in language: " ++ "\"" ++ h ++ "\"")
