@@ -49,9 +49,6 @@ preParse l
   | checkBrackets [] l = preProc (labelBrackets [] 1 l)
   | otherwise = error "Tokens preprocessing error: missmatched brackets in BLOCK formation."
 
-isInt (INT x) = True
-isInt _ = False
-
 seqLeft l (h:t)
   | h /= Semicolon = seqLeft (h:l) t
   | otherwise = l
