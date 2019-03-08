@@ -78,7 +78,10 @@ seqRight (h:t)
   | h /= Semicolon = seqRight t
   | otherwise = t
 
-parse (h:t) = parseBlock (last (preParse (h:t)))
+--parse (h:t) = parseBlock (last (preParse (h:t)))
+
+parse (h:t)
+  | h == Def = parseDec (h:t)
 
 parseBlock :: Token -> BLOCK
 parseBlock (Bl x) = Block (parseENE x)
