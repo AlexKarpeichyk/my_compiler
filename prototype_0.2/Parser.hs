@@ -83,6 +83,11 @@ seqRight (h:t)
 parse (h:t)
   | h == Def = parseDec (h:t)
 
+{-
+parseDec (h:t)
+  | h == Def = parseDef t
+-}
+
 parseBlock :: Token -> BLOCK
 parseBlock (Bl x) = Block (parseENE x)
 
