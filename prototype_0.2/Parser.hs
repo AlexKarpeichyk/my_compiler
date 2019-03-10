@@ -6,8 +6,8 @@ import Lexer
 
 data PROG = P DEC | PSEQ (DEC) (PROG) deriving (Show)
 data DEC = DEF (String) (VARDEC) (BLOCK) deriving (Show)
-data VARDEC = NULL | VARDECNE deriving (Show)
-data VARDECNE = One (String) | Many (VARDECNE) (String) deriving (Show) 
+--data VARDEC = NULL | VARDECNE deriving (Show)
+data VARDEC = None | One (String) | Many (String) (VARDEC) deriving (Show) 
 data BLOCK = Block (ENE) deriving (Show, Eq)
 data ENE = Single (E) | Seq (E) (ENE) deriving (Show, Eq)
 data E = 
@@ -15,10 +15,10 @@ data E =
   | STR (String)
   | INT (Integer)
   | BINOP 
-  | COND (COMP) (BLOCK) (BLOCK)
+  | COND (COMP) (E) (E)
   | Nested (BLOCK)
-  | WHILE (COMP) (BLOCK)
-  | REP (BLOCK) (COMP)
+  | WHILE (COMP) (E)
+  | REP (E) (COMP)
   | ASSIGN (String) (E)
   | FUNCALL (String) (ARGS)
   | SKIP
@@ -78,18 +78,38 @@ seqRight (h:t)
   | h /= Semicolon = seqRight t
   | otherwise = t
 
---parse (h:t) = parseBlock (last (preParse (h:t)))
-
+--parse (h:t) = parseDec (preParse (h:t))
 parse (h:t)
-  | h == Def = parseDec (h:t)
+  | length (filter def (h:t)) == 1 = P (parseDec (preParse (h:t)))
+--  | otherwise = PSEQ () ()
 
-{-
-parseDec (h:t)
-  | h == Def = parseDef t
--}
+def (Def) = True
+def _ = False
+  
+parseDec :: [Token] -> DEC 
+parseDec (Def:(IDENTIFIER x):LBracket:t) = DEF (x) (parseVardec (getVardec [] t)) (parseBlock (getBlock_ t)) 
+parseDec _ = error "Parse error: error in function definition."
+
+getVardec :: [Token] -> [Token] -> [Token]
+getVardec acc (EqualDefines:t) = acc
+getVardec acc (RBracket:EqualDefines:t) = acc
+getVardec acc ((IDENTIFIER x):Comma:t) = getVardec ((IDENTIFIER x):acc) t
+getVardec acc ((IDENTIFIER x):RBracket:t) = getVardec ((IDENTIFIER x):acc) t
+getVardec acc _ = error "Parse error: error in function definition."
+
+parseVardec :: [Token] -> VARDEC
+parseVardec [] = None
+parseVardec [IDENTIFIER x] = One (x)
+parseVardec (IDENTIFIER x:t) = Many (x) (parseVardec t)
+parseVardec _ = error "Parse error: error in variable declaration."
+
+getBlock_ (h:f:t)
+  | h /= EqualDefines = getBlock_ (f:t)
+  | h == EqualDefines = f 
 
 parseBlock :: Token -> BLOCK
 parseBlock (Bl x) = Block (parseENE x)
+parseBlock _ = error "Parse error: not a block."
 
 parseENE :: [Token] -> ENE
 parseENE [x] = Single (parseE [x])
@@ -109,4 +129,5 @@ parseE [Bl x] = Nested (parseBlock (Bl x))
 parseE [Break] = BREAK
 parseE [Continue] = CONTINUE
 parseE [x] = error "Parse error: token not yet supported."
+
 
