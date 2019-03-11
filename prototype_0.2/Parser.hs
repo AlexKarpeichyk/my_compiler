@@ -79,9 +79,11 @@ seqRight (h:t)
   | otherwise = t
 
 --parse (h:t) = parseDec (preParse (h:t))
-parse (h:t)
-  | length (filter def (h:t)) == 1 = P (parseDec (preParse (h:t)))
---  | otherwise = PSEQ () ()
+parse (Def:t)
+  | length (filter def (Def:t)) == 1 = P (parseDec (preParse (Def:t)))
+  | length (filter def (Def:t)) > 1 = PSEQ (parseDec (preParse (Def:t))) (parse t)
+parse (x:t) = parse t
+
 
 def (Def) = True
 def _ = False
@@ -100,7 +102,7 @@ getVardec acc _ = error "Parse error: error in function definition."
 parseVardec :: [Token] -> VARDEC
 parseVardec [] = None
 parseVardec [IDENTIFIER x] = One (x)
-parseVardec (IDENTIFIER x:t) = Many (x) (parseVardec t)
+parseVardec ((IDENTIFIER x):t) = Many (x) (parseVardec t)
 parseVardec _ = error "Parse error: error in variable declaration."
 
 getBlock_ (h:f:t)
