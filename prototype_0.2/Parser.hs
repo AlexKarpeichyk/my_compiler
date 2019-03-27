@@ -6,7 +6,6 @@ import Lexer
 
 data PROG = P DEC | PSEQ (DEC) (PROG) deriving (Show)
 data DEC = DEF (String) (VARDEC) (BLOCK) deriving (Show)
---data VARDEC = NULL | VARDECNE deriving (Show)
 data VARDEC = None | One (String) | Many (String) (VARDEC) deriving (Show) 
 data BLOCK = Block (ENE) deriving (Show, Eq)
 data ENE = Single (E) | Seq (E) (ENE) deriving (Show, Eq)
@@ -60,6 +59,21 @@ labelBrackets expec acc (h:t)
   | h == RCurlyBracket 0 = (RCurlyBracket (head expec)):(labelBrackets (tail expec) acc t)
   | otherwise = h:(labelBrackets expec acc t)
 
+{-
+getFuns [] = []
+getFuns (Def:(IDENTIFIER x):LBracket:t) = [F (Def:(IDENTIFIER x):LBracket:(getFuns t))]
+getFuns (RBracket:EqualDefines:(Bl x):t) = (RBracket:EqualDefines:[Bl x]) ++ (getFuns t) 
+getFuns ((IDENTIFIER x):RBracket:EqualDefines:(Bl y):t) = ((IDENTIFIER x):RBracket:EqualDefines:[Bl y]) ++ (getFuns t)
+getFuns ((IDENTIFIER x):Comma:(IDENTIFIER y):t) = ((IDENTIFIER x):Comma:(IDENTIFIER y):(getFuns t))
+getFuns _ = error "Parse error: unknown smth"
+-}
+
+getFuns acc _ [] = []
+getFuns acc False (Def:t) = getFuns [] True t
+getFuns acc True ((Bl x):t) = (F (acc ++ [Bl x])):(getFuns [] False t)
+getFuns acc True (h:t) = getFuns (acc ++ [h]) True t
+getFuns acc False (h:t) = error "Some error"
+
 preProc [] = []
 preProc (h:t)
   | not (fst (isLBracket h)) = h:(preProc t)
@@ -67,7 +81,7 @@ preProc (h:t)
   | otherwise = error "Tokens preprocessing error: unknown error."
 
 preParse l
-  | checkBrackets [] l = preProc (labelBrackets [] 1 l)
+  | checkBrackets [] l = getFuns [] False (preProc (labelBrackets [] 1 l))
   | otherwise = error "Tokens preprocessing error: missmatched brackets in BLOCK formation."
 
 seqLeft l (h:t)
@@ -78,27 +92,43 @@ seqRight (h:t)
   | h /= Semicolon = seqRight t
   | otherwise = t
 
---parse (h:t) = parseDec (preParse (h:t))
-parse (Def:t)
-  | length (filter def (Def:t)) == 1 = P (parseDec (preParse (Def:t)))
-  | length (filter def (Def:t)) > 1 = PSEQ (parseDec (preParse (Def:t))) (parse t)
+{-
+parse (h:t)
+  | length (h:t) == 1 = P (parseDec (preParse (Def:t)))
+  | length (h:t) > 1 = PSEQ (parseDec (preParse (Def:t))) (parse t)
 parse (x:t) = parse t
+-}
 
+parse [(F x)] = P (parseDec (F x))
+parse ((F x):t) = PSEQ (parseDec (F x)) (parse t)
+parse _ = error "Parse error: not a program." 
 
-def (Def) = True
-def _ = False
-  
+{-
 parseDec :: [Token] -> DEC 
 parseDec (Def:(IDENTIFIER x):LBracket:t) = DEF (x) (parseVardec (getVardec [] t)) (parseBlock (getBlock_ t)) 
 parseDec _ = error "Parse error: error in function definition."
+-}
 
-getVardec :: [Token] -> [Token] -> [Token]
+parseDec (F x) = DEF (getDefID x) (parseVardec (fst (getVardecAndBlock [] (tail x)))) (parseBlock (snd (getVardecAndBlock [] (tail x))))
+parseDec _ = error "Parse error: error in function definition here."
+
+getDefID ((IDENTIFIER x):t) = x
+getDefID _ = error "Parse error: error in function definition."
+
+getVardecAndBlock :: [Token] -> [Token] -> ([Token], Token)
+--getVardecAndBlock acc [LBracket,(IDENTIFIER x),RBracket,EqualDefines,(Bl y)] = ([IDENTIFIER x], (Bl y))
+getVardecAndBlock [] [LBracket,RBracket,EqualDefines,(Bl y)] = ([], (Bl y))
+getVardecAndBlock acc (LBracket:(IDENTIFIER x):Comma:t) = getVardecAndBlock (acc ++ [IDENTIFIER x]) (LBracket:t)
+getVardecAndBlock acc [LBracket,(IDENTIFIER x),RBracket,EqualDefines,(Bl y)] = ((acc ++ [IDENTIFIER x]), (Bl y))
+getVardecAndBlock acc _ = error "Parse error: error in variable declaration."
+
+{- 
 getVardec acc (EqualDefines:t) = acc
 getVardec acc (RBracket:EqualDefines:t) = acc
-getVardec acc ((IDENTIFIER x):Comma:t) = getVardec ((IDENTIFIER x):acc) t
-getVardec acc ((IDENTIFIER x):RBracket:t) = getVardec ((IDENTIFIER x):acc) t
+getVardec acc ((IDENTIFIER x):Comma:t) = getVardec (acc ++ [IDENTIFIER x]) t
+getVardec acc ((IDENTIFIER x):RBracket:t) = getVardec (acc ++ [IDENTIFIER x]) t
 getVardec acc _ = error "Parse error: error in function definition."
-
+-}
 parseVardec :: [Token] -> VARDEC
 parseVardec [] = None
 parseVardec [IDENTIFIER x] = One (x)

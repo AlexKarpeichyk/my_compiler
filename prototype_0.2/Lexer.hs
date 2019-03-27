@@ -22,7 +22,7 @@ data Token =
   | GreaterEq | Comma | Assign | Plus | Minus | Mult | Div
   | IDENTIFIER String | INTEGER Integer | BOOLEAN String | STRING String | Def | Skip
   | If | Then | Else | While | Do | Repeat | Until 
-  | Break | Continue | Bl [Token] deriving (Show, Eq)
+  | Break | Continue | Print (Token) | F [Token] | Bl [Token] deriving (Show, Eq)
 
 -- Functions 
 
