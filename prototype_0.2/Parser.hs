@@ -13,22 +13,27 @@ data E =
     ID (String)
   | STR (String)
   | INT (Integer)
-  | BINOP 
-  | COND (COMP) (E) (E)
+  | BOOL (BLN)
+  | BinOp (BINOP)
+  | Comp (COMP) 
+  | COND (COMP) (BLOCK) (BLOCK)
   | Nested (BLOCK)
-  | WHILE (COMP) (E)
-  | REP (E) (COMP)
+  | WHILE (COMP) (BLOCK)
+  | REP (BLOCK) (COMP)
   | ASSIGN (String) (E)
   | FUNCALL (String) (ARGS)
   | SKIP
   | BREAK
-  | CONTINUE deriving (Show, Eq)
-data ARGS = Nil | ARGSNE deriving (Show, Eq)
-data ARGSNE = OneA (E) | ManyA (ARGSNE) deriving (Show, Eq)
+  | CONTINUE
+  | PRINT (E) deriving (Show, Eq)
+data BLN = T | F deriving (Show, Eq)
+data ARGS = NoA | OneA (E) | ManyA (E) (ARGS) deriving (Show, Eq)
 data COMP = Eq (E) (E) | Less (E) (E) | Greater (E) (E) | LessEq (E) (E) | GreaterEq (E) (E) deriving (Show, Eq)
-data BINOP = Add (E) (E) | Sub (E) (E) | Times (E) (E) | Divide (E) (E) deriving (Show, Eq)
+data BINOP = Add (E) (E) | Sub (E) (E) | Mult (E) (E) | Div (E) (E) deriving (Show, Eq)  
 
 -- Functions
+
+-- 1. Parser pre-processing
 
 isLBracket (LCurlyBracket x) = (True, x)
 isLBracket _ = (False, -1)
@@ -59,18 +64,9 @@ labelBrackets expec acc (h:t)
   | h == RCurlyBracket 0 = (RCurlyBracket (head expec)):(labelBrackets (tail expec) acc t)
   | otherwise = h:(labelBrackets expec acc t)
 
-{-
-getFuns [] = []
-getFuns (Def:(IDENTIFIER x):LBracket:t) = [F (Def:(IDENTIFIER x):LBracket:(getFuns t))]
-getFuns (RBracket:EqualDefines:(Bl x):t) = (RBracket:EqualDefines:[Bl x]) ++ (getFuns t) 
-getFuns ((IDENTIFIER x):RBracket:EqualDefines:(Bl y):t) = ((IDENTIFIER x):RBracket:EqualDefines:[Bl y]) ++ (getFuns t)
-getFuns ((IDENTIFIER x):Comma:(IDENTIFIER y):t) = ((IDENTIFIER x):Comma:(IDENTIFIER y):(getFuns t))
-getFuns _ = error "Parse error: unknown smth"
--}
-
 getFuns acc _ [] = []
 getFuns acc False (Def:t) = getFuns [] True t
-getFuns acc True ((Bl x):t) = (F (acc ++ [Bl x])):(getFuns [] False t)
+getFuns acc True ((Bl x):t) = (Fun (acc ++ [Bl x])):(getFuns [] False t)
 getFuns acc True (h:t) = getFuns (acc ++ [h]) True t
 getFuns acc False (h:t) = error "Some error"
 
@@ -84,32 +80,13 @@ preParse l
   | checkBrackets [] l = getFuns [] False (preProc (labelBrackets [] 1 l))
   | otherwise = error "Tokens preprocessing error: missmatched brackets in BLOCK formation."
 
-seqLeft l (h:t)
-  | h /= Semicolon = seqLeft (h:l) t
-  | otherwise = l
+-- 2. Main parser
 
-seqRight (h:t)
-  | h /= Semicolon = seqRight t
-  | otherwise = t
-
-{-
-parse (h:t)
-  | length (h:t) == 1 = P (parseDec (preParse (Def:t)))
-  | length (h:t) > 1 = PSEQ (parseDec (preParse (Def:t))) (parse t)
-parse (x:t) = parse t
--}
-
-parse [(F x)] = P (parseDec (F x))
-parse ((F x):t) = PSEQ (parseDec (F x)) (parse t)
+parse [(Fun x)] = P (parseDec (Fun x))
+parse ((Fun x):t) = PSEQ (parseDec (Fun x)) (parse t)
 parse _ = error "Parse error: not a program." 
 
-{-
-parseDec :: [Token] -> DEC 
-parseDec (Def:(IDENTIFIER x):LBracket:t) = DEF (x) (parseVardec (getVardec [] t)) (parseBlock (getBlock_ t)) 
-parseDec _ = error "Parse error: error in function definition."
--}
-
-parseDec (F x) = DEF (getDefID x) (parseVardec (fst (getVardecAndBlock [] (tail x)))) (parseBlock (snd (getVardecAndBlock [] (tail x))))
+parseDec (Fun x) = DEF (getDefID x) (parseVardec (fst (getVardecAndBlock [] (tail x)))) (parseBlock (snd (getVardecAndBlock [] (tail x))))
 parseDec _ = error "Parse error: error in function definition here."
 
 getDefID ((IDENTIFIER x):t) = x
@@ -122,13 +99,6 @@ getVardecAndBlock acc (LBracket:(IDENTIFIER x):Comma:t) = getVardecAndBlock (acc
 getVardecAndBlock acc [LBracket,(IDENTIFIER x),RBracket,EqualDefines,(Bl y)] = ((acc ++ [IDENTIFIER x]), (Bl y))
 getVardecAndBlock acc _ = error "Parse error: error in variable declaration."
 
-{- 
-getVardec acc (EqualDefines:t) = acc
-getVardec acc (RBracket:EqualDefines:t) = acc
-getVardec acc ((IDENTIFIER x):Comma:t) = getVardec (acc ++ [IDENTIFIER x]) t
-getVardec acc ((IDENTIFIER x):RBracket:t) = getVardec (acc ++ [IDENTIFIER x]) t
-getVardec acc _ = error "Parse error: error in function definition."
--}
 parseVardec :: [Token] -> VARDEC
 parseVardec [] = None
 parseVardec [IDENTIFIER x] = One (x)
@@ -140,19 +110,18 @@ getBlock_ (h:f:t)
   | h == EqualDefines = f 
 
 parseBlock :: Token -> BLOCK
-parseBlock (Bl x) = Block (parseENE x)
+parseBlock (Bl x) = Block (parseENE [] x)
 parseBlock _ = error "Parse error: not a block."
 
-parseENE :: [Token] -> ENE
-parseENE [x] = Single (parseE [x])
-parseENE (h:t)
-  | elem Semicolon (h:t) = parseSeq (h:t)
-  | otherwise = error "Parse error: expression sequence incomplete (missing ';')."
-
-parseSeq :: [Token] -> ENE
-parseSeq (h:t) = Seq (parseE (seqLeft [] (h:t))) (parseENE (seqRight (h:t)))
+parseENE :: [Token] -> [Token]-> ENE
+parseENE acc [] = Single (parseE acc)
+parseENE [] [x] = Single (parseE [x])
+parseENE acc (h:Semicolon:t) = Seq (parseE (acc ++ [h])) (parseENE [] t)
+parseENE acc (h:t) = parseENE (acc ++ [h]) t 
 
 parseE :: [Token] -> E
+parseE [BOOLEAN "true"] = BOOL T
+parseE [BOOLEAN "false"] = BOOL F
 parseE [IDENTIFIER s] = ID s
 parseE [STRING s] = STR s
 parseE [INTEGER x] = INT x
@@ -160,6 +129,45 @@ parseE [Skip] = SKIP
 parseE [Bl x] = Nested (parseBlock (Bl x))
 parseE [Break] = BREAK
 parseE [Continue] = CONTINUE
-parseE [x] = error "Parse error: token not yet supported."
+parseE (Print:t) = PRINT (parsePrint [] t)
+parseE ((IDENTIFIER s):Assign:t) = ASSIGN (s) (parseE t)
+parseE [(IDENTIFIER s),LBracket,RBracket] = FUNCALL (s) (NoA)
+parseE (IDENTIFIER s:LBracket:t) = FUNCALL (s) (parseArgs [] (LBracket:t))
+parseE l
+  | elem LessThan l || elem GreaterThan l || elem LessEqual l || elem GreaterEqual l || elem Equal l = Comp (parseComp [] l) 
+  | elem Plus l || elem Minus l = BinOp (parseBinop [] l)
+  | elem Times l || elem Divide l = BinOp (parseBinop_ [] l)
+  | otherwise = error "error here lol" 
 
+parsePrint :: [Token] -> [Token] -> E
+parsePrint acc [LBracket,RBracket] = PRINT (parseE acc)
+parsePrint acc (LBracket:f:t) = parsePrint (acc ++ [f]) (LBracket:t)
+parsePrint acc _ = error "Parse error: error in print statement."
 
+parseArgs :: [Token] -> [Token] -> ARGS
+parseArgs acc [LBracket,x,RBracket] = OneA (parseE (acc ++ [x]))
+parseArgs acc (LBracket:x:Comma:t) = ManyA (parseE (acc ++ [x])) (parseArgs [] (LBracket:t))
+parseArgs acc (LBracket:x:t) = parseArgs (acc ++ [x]) (LBracket:t)
+parseArgs acc _ = error "Parse error: error in funciton call."
+
+parseBinop :: [Token] -> [Token] -> BINOP
+parseBinop acc [x]
+  | elem x [Plus, Minus, Times, Divide] = error "Parse error: error in binary operation"
+parseBinop acc (h:t) 
+  | h == Plus = Add (parseE acc) (parseE t)
+  | h == Minus = Sub (parseE acc) (parseE t)
+  | otherwise = parseBinop (acc ++ [h]) t
+
+parseBinop_ :: [Token] -> [Token] -> BINOP
+parseBinop_ acc (h:t)
+  | h == Times = Mult (parseE acc) (parseE t)
+  | h == Divide = Div (parseE acc) (parseE t)
+  | otherwise = parseBinop_ (acc ++ [h]) t
+
+-- CONTINUE HERE
+parseComp :: [Token] -> [Token] -> COMP
+parseComp acc [x]
+  | elem x [LessThan, GreaterThan, LessEqual, GreaterEqual, Equal] = error "Parse error: error in logical operation."
+parseComp acc (h:t)
+  | h == Equal = Eq (parseE acc) (parseE t)
+  | h == LessThan = Less (parseE acc)  

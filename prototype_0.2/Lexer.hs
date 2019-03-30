@@ -18,11 +18,11 @@ import Text.Regex.Posix
 
 data Token = 
     Semicolon | LBracket | RBracket | LCurlyBracket Integer | RCurlyBracket Integer
-  | EqualDefines | Equal | LessThan | GreaterThan | LessEq
-  | GreaterEq | Comma | Assign | Plus | Minus | Mult | Div
+  | EqualDefines | Equal | LessThan | GreaterThan | LessEqual
+  | GreaterEqual | Comma | Assign | Plus | Minus | Times | Divide
   | IDENTIFIER String | INTEGER Integer | BOOLEAN String | STRING String | Def | Skip
   | If | Then | Else | While | Do | Repeat | Until 
-  | Break | Continue | Print (Token) | F [Token] | Bl [Token] deriving (Show, Eq)
+  | Break | Continue | Print | Fun [Token] | Bl [Token] deriving (Show, Eq)
 
 -- Functions 
 
@@ -88,14 +88,14 @@ tokenize (h:t) l
   | h == "==" = tokenize (t) (l ++ [Equal])
   | h == "<" = tokenize (t) (l ++ [LessThan])
   | h == ">" = tokenize (t) (l ++ [GreaterThan])
-  | h == "<=" = tokenize (t) (l ++ [LessEq])
-  | h == ">=" = tokenize (t) (l ++ [GreaterEq])
+  | h == "<=" = tokenize (t) (l ++ [LessEqual])
+  | h == ">=" = tokenize (t) (l ++ [GreaterEqual])
   | h == "," = tokenize (t) (l ++ [Comma])
   | h == ":=" = tokenize (t) (l ++ [Assign])
   | h == "+" = tokenize (t) (l ++ [Plus])
   | h == "-" = tokenize (t) (l ++ [Minus])
-  | h == "*" = tokenize (t) (l ++ [Mult])
-  | h == "/" = tokenize (t) (l ++ [Div])
+  | h == "*" = tokenize (t) (l ++ [Times])
+  | h == "/" = tokenize (t) (l ++ [Divide])
   | h == "def" = tokenize (t) (l ++ [Def])
   | h == "skip" = tokenize (t) (l ++ [Skip])
   | h == "if" = tokenize (t) (l ++ [If])
@@ -109,6 +109,7 @@ tokenize (h:t) l
   | h == "continue" = tokenize (t) (l ++ [Continue])
   | h == "true" = tokenize (t) (l ++ [(BOOLEAN "true")])
   | h == "false" = tokenize (t) (l ++ [(BOOLEAN "false")])
+  | h == "print" = tokenize (t) (l ++ [Print])
   | (isNum h) = tokenize (t) (l ++ [INTEGER (toInt h)])
   | (isString h) = tokenize (t) (l ++ [STRING h])
   | (isID h) = tokenize (t) (l ++ [IDENTIFIER h])
