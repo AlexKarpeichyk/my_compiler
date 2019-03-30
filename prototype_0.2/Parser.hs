@@ -93,7 +93,6 @@ getDefID ((IDENTIFIER x):t) = x
 getDefID _ = error "Parse error: error in function definition."
 
 getVardecAndBlock :: [Token] -> [Token] -> ([Token], Token)
---getVardecAndBlock acc [LBracket,(IDENTIFIER x),RBracket,EqualDefines,(Bl y)] = ([IDENTIFIER x], (Bl y))
 getVardecAndBlock [] [LBracket,RBracket,EqualDefines,(Bl y)] = ([], (Bl y))
 getVardecAndBlock acc (LBracket:(IDENTIFIER x):Comma:t) = getVardecAndBlock (acc ++ [IDENTIFIER x]) (LBracket:t)
 getVardecAndBlock acc [LBracket,(IDENTIFIER x),RBracket,EqualDefines,(Bl y)] = ((acc ++ [IDENTIFIER x]), (Bl y))
@@ -133,11 +132,17 @@ parseE (Print:t) = PRINT (parsePrint [] t)
 parseE ((IDENTIFIER s):Assign:t) = ASSIGN (s) (parseE t)
 parseE [(IDENTIFIER s),LBracket,RBracket] = FUNCALL (s) (NoA)
 parseE (IDENTIFIER s:LBracket:t) = FUNCALL (s) (parseArgs [] (LBracket:t))
+parseE (If:t) = parseCond [] (If:t)
+parseE (While:t) = parseWhile [] (If:t)
+parseE (Repeat:(Bl y):Until:t)
+  | elem LessThan t || elem GreaterThan t || elem LessEqual t || elem GreaterEqual t || elem Equal t = REP (parseBlock (Bl y)) (parseComp [] t)
+  | otherwise = error "Parse error: error in repeat-loop."
+parseE (Repeat:_) = error "Parse error: error in repeat-loop."
 parseE l
   | elem LessThan l || elem GreaterThan l || elem LessEqual l || elem GreaterEqual l || elem Equal l = Comp (parseComp [] l) 
   | elem Plus l || elem Minus l = BinOp (parseBinop [] l)
   | elem Times l || elem Divide l = BinOp (parseBinop_ [] l)
-  | otherwise = error "error here lol" 
+  | otherwise = error "Parse error: some syntax error." 
 
 parsePrint :: [Token] -> [Token] -> E
 parsePrint acc [LBracket,RBracket] = PRINT (parseE acc)
@@ -164,10 +169,31 @@ parseBinop_ acc (h:t)
   | h == Divide = Div (parseE acc) (parseE t)
   | otherwise = parseBinop_ (acc ++ [h]) t
 
--- CONTINUE HERE
 parseComp :: [Token] -> [Token] -> COMP
 parseComp acc [x]
   | elem x [LessThan, GreaterThan, LessEqual, GreaterEqual, Equal] = error "Parse error: error in logical operation."
 parseComp acc (h:t)
   | h == Equal = Eq (parseE acc) (parseE t)
-  | h == LessThan = Less (parseE acc)  
+  | h == LessThan = Less (parseE acc) (parseE t)
+  | h == GreaterThan = Greater (parseE acc) (parseE t)
+  | h == LessEqual = LessEq (parseE acc) (parseE t)
+  | h == GreaterEqual = GreaterEq (parseE acc) (parseE t)
+  | otherwise = parseComp (acc ++ [h]) t 
+
+parseCond :: [Token] -> [Token] -> E
+parseCond acc [If,x,Then,(Bl y),Else,(Bl z)]
+  | elem LessThan l || elem GreaterThan l || elem LessEqual l || elem GreaterEqual l || elem Equal l = COND (parseComp [] (acc ++ [x])) (parseBlock (Bl y)) (parseBlock (Bl z))
+  | otherwise = error "Parse error: error in conditional."
+  where 
+    l = (acc ++ [x])
+parseCond acc (If:x:t) = parseCond (acc ++ [x]) (If:t)
+parseCond acc _ = error "Parse error: error in conditional."
+
+parseWhile :: [Token] -> [Token] -> E
+parseWhile acc [While,x,Do,(Bl y)]
+  | elem LessThan l || elem GreaterThan l || elem LessEqual l || elem GreaterEqual l || elem Equal l = WHILE (parseComp [] (acc ++ [x])) (parseBlock (Bl y))
+  | otherwise = error "Parse error: error in while-lopp."
+  where
+    l = (acc ++ [x])
+parseWhile acc (If:x:t) = parseWhile (acc ++ [x]) (While:t)
+parseWhile acc _ = error "Parse error: error in while-lopp."
