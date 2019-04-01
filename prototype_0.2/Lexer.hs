@@ -1,12 +1,18 @@
 module Lexer
+{-
 ( Token (..)
+, isID
+, inRegex
+, isString
+, fixStrings
 , isNum
 , toInt
 , specNot
 , clearSpaces
 , lex_
 , tokenize
-) where
+)-}
+ where
 
 -- Necessary Imports
 

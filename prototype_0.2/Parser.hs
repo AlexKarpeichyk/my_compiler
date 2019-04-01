@@ -1,3 +1,19 @@
+module Parser
+{-
+( PROG (..)
+, DEC (..)
+, VARDEC (..)
+, BLOCK (..)
+, ENE (..)
+, E (..)
+, BLN (..)
+, ARGS (..)
+, COMP (..)
+, BINOP (..)
+, 
+)-}
+where
+
 -- Necessary Imports
 
 import Lexer
