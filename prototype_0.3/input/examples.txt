@@ -1,0 +1,2 @@
+"def foo(int x, string y, string z) = {if x == 0 then {print(y);} else {print(z);};} def main() = {x := \"It's been an honour\"; y := \"to be under your supervision\"; xi := 0; foo(xi, x, y); yi := xi + 1; foo(yi, x, y); z := \"Sir\"; print(z);}"
+
