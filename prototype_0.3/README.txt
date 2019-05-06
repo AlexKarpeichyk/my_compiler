@@ -1,5 +1,5 @@
 1) GHCi must be intalled and run to execute .hs files.
-2) Launch GHCi, and naviagte to the folder prototype_0.3 using :cd command. (:cd dir1/dir2/prototype_0.3)
+2) Launch GHCi, and naviagte to the folder prototype_0.3 using :cd command. (:cd some_dir/Compiler/prototype_0.3)
 3) Load the compiler by runnning :l Compiler.hs (:l Compiler.hs)
 4) To compile the source language, you need a program string. Example string is in the input folder, examples.txt.
 5) Type 'compile' into the GHCi terminal followed by the desired name of the output file, followed by the string coppied from examples.txt or write your own. (compile "file" "def main() = {x := \"Hello world!\";}")
