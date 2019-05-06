@@ -82,13 +82,13 @@ getFuns acc _ [] = []
 getFuns acc False (Def:t) = getFuns [] True t
 getFuns acc True ((Bl x):t) = (Fun (acc ++ [Bl x])):(getFuns [] False t)
 getFuns acc True (h:t) = getFuns (acc ++ [h]) True t
-getFuns acc False _ = error "Syntax error."
+getFuns acc False _ = error "Parse error: some syntax error."
 
 preProc [] = []
 preProc (h:t)
   | not (fst (isLBracket h)) = h:(preProc t)
   | fst (isLBracket h) = Bl (preProc (getBlock (snd (isLBracket h)) [] t)):(preProc (getRest (snd (isLBracket h)) t))
-  | otherwise = error "Tokens preprocessing error: unknown error."
+  | otherwise = error "Parse error: some syntax error."
 
 preParse l
   | checkBrackets [] l = getFuns [] False (preProc (labelBrackets [] 1 l))
@@ -96,9 +96,11 @@ preParse l
 
 -- 2. Main parser
 
-parse :: [Token] -> PROG
-parse ((Fun x):t) = Prog ((parseDec ((Fun x):t)))
-parse _ = error "Parse error: not a program." 
+parse (h:t) = parseProg (preParse (h:t))
+
+parseProg :: [Token] -> PROG
+parseProg ((Fun x):t) = Prog ((parseDec ((Fun x):t)))
+parseProg _ = error "Parse error: not a program." 
 
 parseDec :: [Token] -> [DEC]
 parseDec [Fun x] = [DEF (getDefID x) (parseParams (fst (getParamsAndBlock [] (tail x)))) (parseBlock (snd (getParamsAndBlock [] (tail x))))]
@@ -134,9 +136,12 @@ parseBlock _ = error "Parse error: not a block."
 
 parseEXPS :: [Token] -> [Token]-> [E]
 parseEXPS acc [] = [parseE acc]
-parseEXPS [] [x] = [parseE [x]]
+--parseEXPS [] [x] = [parseE [x]]
+parseEXPS acc [x, Semicolon] = [parseE (acc ++ [x])]
 parseEXPS acc (h:Semicolon:t) = (parseE (acc ++ [h])):(parseEXPS [] t)
-parseEXPS acc (h:t) = parseEXPS (acc ++ [h]) t 
+parseEXPS acc (h:t) 
+  | last (h:t) == Semicolon = parseEXPS (acc ++ [h]) t 
+  | otherwise = error "Syntax error: ';' expected"
 
 parseE :: [Token] -> E
 parseE [BOOLEAN "true"] = BOOL T
@@ -158,10 +163,10 @@ parseE l
   | elem LessThan l || elem GreaterThan l || elem LessEqual l || elem GreaterEqual l || elem Equal l = Comp (parseComp [] l) 
   | elem Plus l || elem Minus l = BinOp (parseBinop [] l)
   | elem Times l || elem Divide l = BinOp (parseBinop_ [] l)
-  | otherwise = error "Parse error: some syntax error." 
+  | otherwise = error "Parse error: unsupported token." 
 
 parsePrint :: [Token] -> [Token] -> E
-parsePrint acc [LBracket,RBracket] = PRINT (parseE acc)
+parsePrint acc [LBracket,RBracket] = parseE acc
 parsePrint acc (LBracket:f:t) = parsePrint (acc ++ [f]) (LBracket:t)
 parsePrint acc _ = error "Parse error: error in print statement."
 

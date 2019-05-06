@@ -46,7 +46,7 @@ Arrays of characters contained in quotation marks ("").
 
 6. Identifiers 
 
-[a-b]+[A-Z0-9]*_*
+[a-z]+[A-Z0-9]*_*
 
 7. Spaces 
 

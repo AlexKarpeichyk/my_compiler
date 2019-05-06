@@ -11,7 +11,8 @@ module Lexer
 , clearSpaces
 , lex_
 , tokenize
-)-}
+)
+-}
  where
 
 -- Necessary Imports
@@ -77,7 +78,7 @@ specNot (h:f:t)
   | otherwise = h:(specNot (f:t))
  
 clearSpaces :: [String] -> [String]
-clearSpaces l = filter (\x -> x /= "" && x /= " ") l
+clearSpaces l = filter (\x -> x /= "" && x /= " " && x /= "\n" && x /= "\t") l
 
 lex_ :: String -> [Token]
 lex_ s = tokenize (specNot (fixStrings (clearSpaces (split (oneOf " \t\n(){}=+-/*><;,:") s)))) []
